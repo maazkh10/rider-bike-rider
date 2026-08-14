@@ -1,0 +1,20 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@/assets/*": [
+        "./assets/*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+, "src/services/notifications.js", "src/components/common/StatusBadge.jsx", "src/components/cards/DeliveryCard.jsx", "src/app/history/index.jsx", "src/app/history/details.jsx", "src/components/ride/RiderOTP.jsx", "src/app/ride/otp.jsx", "src/components/earnings/WalletCard.jsx", "src/components/earnings/EarningOverview.jsx", "src/app/earning/index.jsx", "src/components/cards/HistoryCard.jsx", "src/services/ride.js"  ]
+}
