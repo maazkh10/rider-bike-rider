@@ -102,19 +102,15 @@ export default function PaymentSummary() {
           </Text>
 
           <Text style={styles.infoText}>
-            • Your payment will be securely
-            processed through Razorpay.
+            • Secure checkout is not enabled yet. Do not submit payment until server-side verification is available.
           </Text>
 
           <Text style={styles.infoText}>
-            • Payment will only be released
-            after the delivery is successfully
-            completed.
+            • Payment is intended to be collected only after the ride is completed.
           </Text>
 
           <Text style={styles.infoText}>
-            • Rider earnings are credited after
-            successful delivery confirmation.
+            • Payment status must be confirmed by the backend before the app can show success.
           </Text>
         </View>
 
