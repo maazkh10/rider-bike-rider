@@ -17,33 +17,36 @@ import PriceRow from "../../components/payment/PriceRow";
 import PaymentButton from "../../components/payment/PaymentButton";
 
 import Colors from "../../theme/colors";
+import { useLocalSearchParams } from "expo-router";
 
 export default function PaymentSummary() {
   const router = useRouter();
+  const params = useLocalSearchParams();
 
-  // Dummy Data (Later this will come from the previous screen)
+  // Values are display data supplied by the booking flow. The backend remains
+  // authoritative for the payable amount and must validate it before payment.
   const delivery = {
-    bike: "Royal Enfield Classic 350",
-
-    pickup: "Central Godown, Mumbai",
-
-    destination: "Honda Showroom, Andheri",
-
-    distance: "12.4 KM",
-
-    eta: "18 mins",
-
-    deliveryCharge: 180,
-
-    platformFee: 20,
-
-    gst: 4,
+    bike: String(params.vehicleName || params.bike || "Bike delivery"),
+    pickup: String(params.pickup || "Pickup location not provided"),
+    destination: String(params.destination || params.drop || "Destination not provided"),
+    distance: params.distance ? String(params.distance) : "—",
+    eta: params.eta ? String(params.eta) : "—",
+    deliveryCharge: Number(params.deliveryCharge ?? params.fare ?? NaN),
+    platformFee: Number(params.platformFee ?? 0),
+    gst: Number(params.gst ?? 0),
   };
 
-  const total =
-    delivery.deliveryCharge +
-    delivery.platformFee +
-    delivery.gst;
+  const hasValidAmount =
+    Number.isFinite(delivery.deliveryCharge) &&
+    delivery.deliveryCharge > 0 &&
+    Number.isFinite(delivery.platformFee) &&
+    delivery.platformFee >= 0 &&
+    Number.isFinite(delivery.gst) &&
+    delivery.gst >= 0;
+
+  const total = hasValidAmount
+    ? delivery.deliveryCharge + delivery.platformFee + delivery.gst
+    : null;
 
   return (
     <ScreenWrapper>
@@ -69,24 +72,24 @@ export default function PaymentSummary() {
 
           <PriceRow
             title="Delivery Charge"
-            value={`₹${delivery.deliveryCharge}`}
+            value={Number.isFinite(delivery.deliveryCharge) ? `₹${delivery.deliveryCharge}` : "Not available"}
           />
 
           <PriceRow
             title="Platform Fee"
-            value={`₹${delivery.platformFee}`}
+            value={Number.isFinite(delivery.platformFee) ? `₹${delivery.platformFee}` : "Not available"}
           />
 
           <PriceRow
             title="GST"
-            value={`₹${delivery.gst}`}
+            value={Number.isFinite(delivery.gst) ? `₹${delivery.gst}` : "Not available"}
           />
 
           <View style={styles.divider} />
 
           <PriceRow
             title="Total Amount"
-            value={`₹${total}`}
+            value={total == null ? "Not available" : `₹${total}`}
             total
           />
         </View>
@@ -117,12 +120,25 @@ export default function PaymentSummary() {
 
         {/* Pay Button */}
 
-        <PaymentButton
-          amount={total}
-          onPress={() =>
-            router.push("/payment/processing")
-          }
-        />
+        {!hasValidAmount ? (
+          <View style={styles.warningCard}>
+            <Text style={styles.warningTitle}>Price unavailable</Text>
+            <Text style={styles.warningText}>
+              Payment cannot start until the booking flow provides a valid fare.
+              This screen will not invent a price or mark an unverified payment as successful.
+            </Text>
+          </View>
+        ) : (
+          <PaymentButton
+            amount={total}
+            onPress={() =>
+              router.push({
+                pathname: "/payment/processing",
+                params: { amount: String(total) },
+              })
+            }
+          />
+        )}
       </ScrollView>
     </ScreenWrapper>
   );
@@ -181,5 +197,25 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 8,
     fontSize: 14,
+  },
+  warningCard: {
+    backgroundColor: "#FFF7ED",
+    borderColor: "#FED7AA",
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 16,
+    marginTop: 22,
+    marginBottom: 35,
+  },
+  warningTitle: {
+    color: "#9A3412",
+    fontSize: 16,
+    fontWeight: "800",
+    marginBottom: 6,
+  },
+  warningText: {
+    color: "#7C2D12",
+    fontSize: 13,
+    lineHeight: 20,
   },
 });
