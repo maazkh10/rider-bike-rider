@@ -485,29 +485,29 @@ export const connectRideSocket = async (
                 // The same rider topic can also receive
                 // cancellation events. Only RIDE_REQUEST
                 // should open the accept/decline modal.
-                if (eventType === "RIDE_REQUEST") {
-                  try {
-                    if (typeof showRideNotification === "function") {
-                      await showRideNotification(
-                        "New delivery request",
-                        `Ride #${rideData?.rideId || rideData?.id || "—"} is waiting for your response.`,
-                        { type: "RIDE_REQUEST", rideId: rideData?.rideId || rideData?.id }
-                      );
-                    }
-                  } catch (err) {
-                    console.error("❌ showRideNotification failed:", err);
-                  }
-                } else if (eventType === "RIDE_CANCELLED" || eventType === "RIDE_CANCELLED_BY_USER") {
-                  try {
-                    if (typeof showRideNotification === "function") {
-                      await showRideNotification("Ride cancelled", "The delivery request is no longer available.", { type: eventType });
-                    }
-                  } catch (err) {
-                    console.error("❌ showRideNotification failed:", err);
-                  }
+                const rideId = rideData?.rideId ?? rideData?.id ?? rideData?.deliveryId;
 
+                // Keep the modal callback for RIDE_REQUEST only. A local
+                // notification is useful while the app is in foreground; for
+                // background/killed delivery the backend must send an Expo push.
+                if (eventType === "RIDE_REQUEST") {
+                  await showRideNotification(
+                    "New ride request",
+                    `Ride #${rideId ?? "—"} is waiting for your response.`,
+                    { type: eventType, rideId }
+                  );
+                } else if (
+                  eventType === "RIDE_CANCELLED" ||
+                  eventType === "RIDE_CANCELLED_BY_USER"
+                ) {
+                  await showRideNotification(
+                    "Ride request cancelled",
+                    `Ride #${rideId ?? "—"} is no longer available.`,
+                    { type: eventType, rideId }
+                  );
                   return;
-                } else if (eventType && eventType !== "RIDE_REQUEST") {
+                } else {
+                  // Status events must not open an offer/accept modal.
                   return;
                 }
 
