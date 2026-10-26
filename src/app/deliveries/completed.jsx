@@ -7,6 +7,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import ScreenWrapper from "../../components/common/ScreenWrapper";
+import BackHeader from "../../components/common/BackHeader";
 import Colors from "../../theme/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -22,6 +23,7 @@ export default function Completed() {
   return (
     <ScreenWrapper>
       <View style={styles.container}>
+        <BackHeader title="Delivery completed" subtitle="Ride finished successfully" />
         <View style={styles.successCircle}>
           <Ionicons name="checkmark" size={70} color="#fff" />
         </View>
