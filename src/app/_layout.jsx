@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Stack, router } from "expo-router";
 import { registerForNotifications, addNotificationListeners } from "../services/notifications";
+import ScreenBackButton from "../components/common/ScreenBackButton";
 
 // IMPORTANT:
 // Import this module at startup so expo-task-manager registers the
@@ -40,5 +41,10 @@ export default function RootLayout() {
     };
   }, []);
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="explore" options={{ headerShown: true, title: "Explore", headerLeft: () => <ScreenBackButton fallback="/(tabs)/home" /> }} />
+      <Stack.Screen name="modal" options={{ headerShown: true, title: "", headerLeft: () => <ScreenBackButton fallback="/(tabs)/home" /> }} />
+    </Stack>
+  );
 }

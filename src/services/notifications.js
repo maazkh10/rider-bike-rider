@@ -506,6 +506,20 @@ export const connectRideSocket = async (
                     { type: eventType, rideId }
                   );
                   return;
+                } else if (eventType === "RIDE_STARTED") {
+                  await showRideNotification(
+                    "Ride started",
+                    `Ride #${rideId ?? "—"} has started.`,
+                    { type: eventType, rideId }
+                  );
+                  return;
+                } else if (eventType === "RIDE_COMPLETED") {
+                  await showRideNotification(
+                    "Ride completed",
+                    `Ride #${rideId ?? "—"} has been completed.`,
+                    { type: eventType, rideId }
+                  );
+                  return;
                 } else {
                   // Status events must not open an offer/accept modal.
                   return;
