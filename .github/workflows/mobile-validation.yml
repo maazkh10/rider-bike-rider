@@ -1,0 +1,43 @@
+name: Rider app validation
+
+on:
+  push:
+    branches:
+      - repair/ride-lifecycle-notifications-payments
+  pull_request:
+    branches:
+      - repair/ride-lifecycle-notifications-payments
+  workflow_dispatch:
+
+jobs:
+  validate-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Validate Expo config
+        run: npx expo config --type public
+        env:
+          EXPO_PUBLIC_API_URL: https://rider-booking-app.onrender.com
+          EXPO_PUBLIC_ALLOW_DEV_JWT_LOGIN: "false"
+      - name: Bundle Rider Android app
+        run: npx expo export --platform android --output-dir dist/android
+        env:
+          EXPO_PUBLIC_API_URL: https://rider-booking-app.onrender.com
+          EXPO_PUBLIC_ALLOW_DEV_JWT_LOGIN: "false"
+      - name: Upload JS bundle output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rider-android-js-bundle
+          path: dist/android
+          if-no-files-found: ignore
+          retention-days: 3
