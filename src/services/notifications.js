@@ -172,26 +172,8 @@ export const registerForNotifications = async () => {
       return null;
     }
 
-    await AsyncStorage.setItem(
-      "pushToken",
-      pushToken
-    );
-
-    console.log(
-      "=========================================="
-    );
-
-    console.log(
-      "📱 EXPO PUSH TOKEN"
-    );
-
-    console.log(
-      pushToken
-    );
-
-    console.log(
-      "=========================================="
-    );
+    // Never log the token. A server registration API is required for remote push delivery.
+    await AsyncStorage.setItem("pushToken", pushToken);
 
     return pushToken;
 
