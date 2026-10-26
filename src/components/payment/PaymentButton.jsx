@@ -20,9 +20,9 @@ export default function PaymentButton({ amount, onPress }) {
         </View>
 
         <View style={styles.info}>
-          <Text style={styles.payText}>Pay Securely</Text>
+          <Text style={styles.payText}>Payment setup pending</Text>
 
-          <Text style={styles.gateway}>Powered by Razorpay</Text>
+          <Text style={styles.gateway}>Server verification required</Text>
         </View>
       </View>
 

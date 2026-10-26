@@ -50,6 +50,8 @@ import { getLocationName } from "../../services/location.service";
 import {
   connectRideSocket,
   disconnectRideSocket,
+  registerForNotifications,
+  configureNotificationChannels,
 } from "../../services/notifications";
 
 // ======================================================
@@ -384,6 +386,16 @@ export default function Home() {
           throw new Error(
             "Rider profile is not created yet. Complete rider registration first."
           );
+        }
+
+        // Request push permissions on supported development/standalone builds.
+        // Current backend has no token registration endpoint, so this only prepares
+        // the device token locally; remote/background delivery requires backend work.
+        try {
+          await configureNotificationChannels();
+          await registerForNotifications();
+        } catch (notificationError) {
+          if (__DEV__) console.log("Rider notification setup:", notificationError?.message);
         }
 
         // =================================================

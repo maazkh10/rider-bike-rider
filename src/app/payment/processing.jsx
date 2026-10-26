@@ -1,54 +1,29 @@
-import { useEffect } from "react";
-
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-
 import { useRouter } from "expo-router";
-
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BackHeader from "../../components/common/BackHeader";
 import ScreenWrapper from "../../components/common/ScreenWrapper";
-
 import Colors from "../../theme/colors";
 
 export default function Processing() {
   const router = useRouter();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Later Razorpay will open here
-
-      router.replace("/payment/success");
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
+  // This route deliberately does not simulate checkout. The secure payment
+  // flow must first create a server-side Razorpay order, open the checkout SDK,
+  // then verify the returned signature on the backend before showing success.
   return (
     <ScreenWrapper>
-      <BackHeader title="Processing Payment" subtitle="Please wait..." />
-
+      <BackHeader title="Payment setup required" subtitle="Checkout has not been started" />
       <View style={styles.container}>
-        {/* Card */}
-
         <View style={styles.card}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>₹</Text>
-          </View>
-
-          <Text style={styles.title}>Processing Payment</Text>
-
+          <Text style={styles.logo}>₹</Text>
+          <Text style={styles.title}>Payment is not yet confirmed</Text>
           <Text style={styles.subtitle}>
-            Connecting securely with
-            {"\n"}
-            Razorpay...
+            This app does not yet have a verified Razorpay order flow connected.
+            No payment has been taken and this screen will not report a false success.
           </Text>
-
-          <ActivityIndicator
-            size="large"
-            color={Colors.primary}
-            style={styles.loader}
-          />
-
-          <Text style={styles.info}>Please don't close the app</Text>
+          <TouchableOpacity style={styles.button} onPress={() => router.replace("/payment/summary")}>
+            <Text style={styles.buttonText}>Back to payment summary</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </ScreenWrapper>
@@ -56,93 +31,11 @@ export default function Processing() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-
-    justifyContent: "center",
-
-    alignItems: "center",
-
-    backgroundColor: "#F7F8FA",
-
-    padding: 20,
-  },
-
-  card: {
-    width: "100%",
-
-    backgroundColor: "#fff",
-
-    borderRadius: 28,
-
-    padding: 35,
-
-    alignItems: "center",
-
-    shadowColor: "#000",
-
-    shadowOpacity: 0.08,
-
-    shadowRadius: 12,
-
-    elevation: 5,
-  },
-
-  logo: {
-    width: 100,
-
-    height: 100,
-
-    borderRadius: 50,
-
-    backgroundColor: Colors.primary,
-
-    justifyContent: "center",
-
-    alignItems: "center",
-  },
-
-  logoText: {
-    fontSize: 48,
-
-    fontWeight: "900",
-
-    color: "#111",
-  },
-
-  title: {
-    marginTop: 30,
-
-    fontSize: 26,
-
-    fontWeight: "800",
-
-    color: "#111",
-  },
-
-  subtitle: {
-    marginTop: 12,
-
-    textAlign: "center",
-
-    color: "#666",
-
-    fontSize: 15,
-
-    lineHeight: 24,
-  },
-
-  loader: {
-    marginTop: 35,
-  },
-
-  info: {
-    marginTop: 30,
-
-    color: "#888",
-
-    fontSize: 15,
-
-    fontWeight: "600",
-  },
+  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F7F8FA", padding: 20 },
+  card: { width: "100%", backgroundColor: "#fff", borderRadius: 28, padding: 28, alignItems: "center", elevation: 3 },
+  logo: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.primary, textAlign: "center", textAlignVertical: "center", fontSize: 44, fontWeight: "900", color: "#111", overflow: "hidden" },
+  title: { marginTop: 24, fontSize: 23, fontWeight: "900", color: "#111", textAlign: "center" },
+  subtitle: { marginTop: 12, fontSize: 15, lineHeight: 23, color: "#666", textAlign: "center" },
+  button: { marginTop: 28, minHeight: 52, borderRadius: 16, backgroundColor: Colors.primary, paddingHorizontal: 20, alignItems: "center", justifyContent: "center", width: "100%" },
+  buttonText: { fontSize: 15, fontWeight: "800", color: "#111", textAlign: "center" },
 });
