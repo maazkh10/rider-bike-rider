@@ -21,8 +21,8 @@ import {
   confirmEmailToken,
   createRider,
   getMyProfile,
-  sendJWT
 } from "../../services/auth.service";
+import { setAuthToken } from "../../utils/authToken";
 
 export default function ConfirmEmailScreen() {
   const router = useRouter();
@@ -49,11 +49,11 @@ export default function ConfirmEmailScreen() {
       setLoading(true);
 
       const verifyResponse = await confirmEmailToken(email, code);
-      const authToken = verifyResponse?.token || (await sendJWT(username)).token;
+      const authToken = verifyResponse?.token;
       const userId = verifyResponse?.userId;
 
       if (!authToken) throw new Error("Backend did not return a JWT.");
-      await AsyncStorage.setItem("token", authToken);
+      await setAuthToken(authToken);
       if (userId != null) await AsyncStorage.setItem("userId", String(userId));
       if (username) await AsyncStorage.setItem("username", String(username));
       if (mobileNumber) await AsyncStorage.setItem("mobileNumber", String(mobileNumber));

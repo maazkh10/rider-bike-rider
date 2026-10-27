@@ -66,14 +66,19 @@ export default function PickupOTP() {
       );
 
       console.log("✅ START OTP VERIFIED:", response?.data);
+      const refreshed = await getActiveRide();
+      const serverRide = refreshed?.data?.activeRide;
+      if (!serverRide || Number(serverRide.rideId) !== Number(rideId)) {
+        throw new Error("The ride changed. Refresh your active ride before continuing.");
+      }
 
       await AsyncStorage.mergeItem(
         "activeRide",
         JSON.stringify({
           rideId: Number(rideId),
           riderId: Number(riderId),
-          rideStatus: "STARTED",
-          status: "STARTED",
+          rideStatus: serverRide.rideStatus,
+          status: serverRide.rideStatus,
         })
       );
 
@@ -131,7 +136,7 @@ export default function PickupOTP() {
         <Text style={styles.subtitle}>
           Ask the admin for the 4-digit ride OTP.
           {"\n"}
-          The ride starts only after the server verifies it.
+          After verification, the admin pays securely before the ride starts.
         </Text>
 
         <TextInput
@@ -156,7 +161,7 @@ export default function PickupOTP() {
           onPress={handleVerify}
         >
           <Text style={styles.buttonText}>
-            {submitting ? "Verifying..." : "Verify & Start Ride"}
+            {submitting ? "Verifying..." : "Verify OTP"}
           </Text>
         </TouchableOpacity>
 

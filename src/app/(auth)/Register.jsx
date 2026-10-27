@@ -56,6 +56,9 @@ export default function RegisterScreen() {
       return;
     }
 
+    if (password.length < 8 || password.length > 72) {
+      Alert.alert("Invalid password", "Use between 8 and 72 characters."); return;
+    }
     const payload = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -70,9 +73,6 @@ export default function RegisterScreen() {
     try {
       setLoading(true);
 
-      console.log("========== REGISTER PAYLOAD ==========");
-console.log(JSON.stringify(payload, null, 2));
-console.log("======================================");
       const result = await register(payload);
 
 

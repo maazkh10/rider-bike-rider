@@ -21,55 +21,27 @@ export const login = async ({ username, password }) => {
   return response.data;
 };
 
-/**
- * The reference says /login is currently protected by SecurityConfig and
- * returns 403 for anonymous callers. During that deployed state, the guide
- * explicitly uses the confirmation token or /sendJWT for the test flow.
- * We try the real login first, then use the documented development fallback.
- */
+/** Password authentication is required; no development token fallback. */
 export const loginWithCurrentBackend = async (username, password) => {
-  try {
     const result = await login({ username, password });
     if (!result?.token) throw new Error("Login response did not contain a token.");
     await setAuthToken(result.token);
     return result;
-  } catch (error) {
-    if (error?.response?.status !== 403) throw error;
-
-    const devFallback =
-      process.env.EXPO_PUBLIC_ALLOW_DEV_JWT_LOGIN !== "false";
-
-    if (!devFallback) throw error;
-
-    const response = await axios.get(
-      `${BASE_URL}/sendJWT?username=${encodeURIComponent(username)}`
-    );
-    if (!response?.data?.token) {
-      throw new Error("The development JWT endpoint did not return a token.");
-    }
-    await setAuthToken(response.data.token);
-    return response.data;
-  }
 };
 
 export const sendJWT = async (username) => {
-  const response = await axios.get(
-    `${BASE_URL}/sendJWT?username=${encodeURIComponent(username)}`
-  );
-  return response.data;
+  throw new Error("Sign in with your username and password.");
 };
 
 export const confirmEmailToken = async (email, otp) => {
-  const response = await axios.get(
-    `${BASE_URL}/register/confirmToken?token=${encodeURIComponent(String(otp).trim())}`
-  );
+  const response = await axios.post(`${BASE_URL}/register/confirmToken`, {
+    email: String(email).trim(), otp: String(otp).trim(),
+  });
   return response.data;
 };
 
 export const verifyEmail = async (email) => {
-  const response = await axios.get(
-    `${BASE_URL}/register/verifyEmail?emailAddress=${encodeURIComponent(email)}`
-  );
+  const response = await axios.post(`${BASE_URL}/register/verifyEmail`, { emailAddress: String(email).trim() });
   return response.data;
 };
 

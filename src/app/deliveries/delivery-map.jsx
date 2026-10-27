@@ -35,6 +35,20 @@ export default function DeliveryMap() {
 
   useEffect(() => {
     let mounted = true;
+    const timer = setInterval(async () => {
+      try {
+        const response = await getActiveRide();
+        const active = response?.data?.activeRide;
+        if (!mounted) return;
+        if (!active || String(active.rideId) !== rideId) { router.replace("/(tabs)/home"); return; }
+        setRide(active);
+      } catch { /* Keep the last known state; the server validates completion. */ }
+    }, 5000);
+    return () => { mounted = false; clearInterval(timer); };
+  }, [rideId]);
+
+  useEffect(() => {
+    let mounted = true;
     let subscription = null;
 
     const load = async () => {
@@ -198,8 +212,8 @@ export default function DeliveryMap() {
   return (
     <ScreenWrapper>
       <BackHeader
-        title="Ride in Progress"
-        subtitle="Navigate to the showroom"
+        title={ride?.rideStatus === "AWAITING_PAYMENT" ? "Waiting for payment" : "Ride in Progress"}
+        subtitle={ride?.rideStatus === "AWAITING_PAYMENT" ? "Ask the admin to complete payment in their app" : "Navigate to the showroom"}
       />
 
       <View style={styles.container}>
@@ -258,7 +272,7 @@ export default function DeliveryMap() {
           <View style={styles.metaRow}>
             <View style={styles.metaCard}>
               <Text style={styles.metaValue}>
-                ₹{ride?.fare ?? 0}
+                {ride?.riderPaise != null ? `₹${(ride.riderPaise / 100).toFixed(2)}` : "Pending quote"}
               </Text>
               <Text style={styles.metaLabel}>Payout</Text>
             </View>
@@ -286,16 +300,16 @@ export default function DeliveryMap() {
               styles.endButton,
               ending && styles.disabled,
             ]}
-            disabled={ending}
+            disabled={ending || ride?.rideStatus !== "STARTED"}
             onPress={handleEndRide}
           >
             <Text style={styles.endText}>
-              {ending ? "Ending Ride..." : "End Ride"}
+              {ending ? "Ending Ride..." : ride?.rideStatus === "AWAITING_PAYMENT" ? "Waiting for admin payment" : "End Ride"}
             </Text>
           </TouchableOpacity>
 
           <Text style={styles.backendNote}>
-            Current API completes a STARTED ride with End Ride.
+            {ride?.rideStatus === "AWAITING_PAYMENT" ? "Payment confirmation will update this screen automatically." : "End the ride after reaching the destination."}
           </Text>
         </View>
       </View>
