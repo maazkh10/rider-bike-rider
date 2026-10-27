@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Stack, router } from "expo-router";
-import { registerForNotifications, addNotificationListeners } from "../services/notifications";
+import { startPushLifecycle } from "../services/pushClient";
+import api from "../services/api";
 import ScreenBackButton from "../components/common/ScreenBackButton";
 
 // IMPORTANT:
@@ -11,34 +12,17 @@ import "../services/liveLocation.service";
 
 export default function RootLayout() {
   useEffect(() => {
-    registerForNotifications();
-
-    let removeNotificationListeners = () => {};
-
-    addNotificationListeners(
-      (notification) => {
-        if (__DEV__) {
-          console.log("Foreground Notification Received:", notification);
-        }
-      },
-      (response) => {
-        const data = response?.notification?.request?.content?.data || {};
-        const deliveryId = data?.deliveryId || data?.rideId;
-
-        if (deliveryId) {
-          router.push({
-            pathname: "/deliveries/pickup-map",
-            params: { id: String(deliveryId) },
-          });
-        }
-      }
-    ).then((cleanup) => {
-      removeNotificationListeners = cleanup;
-    });
-
-    return () => {
-      removeNotificationListeners();
-    };
+    let disposed = false, cleanup = () => {};
+    startPushLifecycle(async data => {
+      try {
+        const response = await api.get("/api/profile/me/active-ride");
+        const ride = response.data.activeRide;
+        if (ride && Number(ride.rideId) === data.rideId)
+          router.push({ pathname: ["STARTED", "AWAITING_PAYMENT"].includes(ride.rideStatus) ? "/deliveries/delivery-map" : "/deliveries/pickup-map", params: { id: String(data.rideId) } });
+        else router.push({ pathname: "/(tabs)/home", params: { notification: String(data.eventId || data.rideId) } });
+      } catch { router.push("/(tabs)/home"); }
+    }).then(remove => { if (disposed) remove(); else cleanup = remove; }).catch(() => {});
+    return () => { disposed = true; cleanup(); };
   }, []);
 
   return (

@@ -21,6 +21,9 @@ const publicRoutes = [
   "/register/confirmToken",
   "/register/verifyEmail",
   "/health",
+  "/auth/sendotp",
+  "/auth/verifyotp",
+  "/auth/resetpassword",
 ];
 
 api.interceptors.request.use(async (config) => {

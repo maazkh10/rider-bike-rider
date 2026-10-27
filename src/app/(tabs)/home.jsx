@@ -1,9 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import api from "../../services/api";
 
 import {
   ActivityIndicator,
+  AppState,
   Alert,
   RefreshControl,
   ScrollView,
@@ -130,6 +132,24 @@ export default function Home() {
 
   const [statusBusy, setStatusBusy] =
     useState(false);
+  const dismissedOffers = useRef(new Set());
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    const recover = async () => {
+      try {
+        const [offers, current] = await Promise.all([api.get("/api/notifications/ride-requests"), getActiveRideProfile()]);
+        if (!active) return;
+        setActiveRide(current?.activeRide || null);
+        const offer = offers.data.find(item => !dismissedOffers.current.has(String(item.rideId)));
+        if (!current?.activeRide && offer) { setRequest(offer); setRequestVisible(true); }
+        else if (!offer || current?.activeRide) setRequestVisible(false);
+      } catch { /* Poll again after connectivity returns. */ }
+    };
+    void recover();
+    const timer = setInterval(() => { if (AppState.currentState === "active") void recover(); }, 15000);
+    const subscription = AppState.addEventListener("change", state => { if (state === "active") void recover(); });
+    return () => { active = false; clearInterval(timer); subscription.remove(); };
+  }, []));
 
   // ====================================================
   // LOAD PROFILE + RIDES + ACTIVE RIDE
@@ -1609,6 +1629,7 @@ export default function Home() {
           }
 
           onDecline={() => {
+            dismissedOffers.current.add(String(rideIdOf(request)));
             setRequest(null);
 
             setRequestVisible(

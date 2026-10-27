@@ -4,6 +4,8 @@ import * as Device from "expo-device";
 import Constants from "expo-constants";
 import SockJS from "sockjs-client";
 import { getAuthToken } from "../utils/authToken";
+import { syncPushDevice } from "./pushClient";
+import { AppState } from "react-native";
 
 let stompClient = null;
 let currentRideCallback = null;
@@ -53,10 +55,10 @@ const configureNotificationHandler = async () => {
   if (!module?.setNotificationHandler) return;
 
   module.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
+    handleNotification: async (notification) => ({
+      shouldShowBanner: !notification.request.content.data?.remote || AppState.currentState !== "active",
+      shouldShowList: !notification.request.content.data?.remote || AppState.currentState !== "active",
+      shouldPlaySound: !notification.request.content.data?.remote || AppState.currentState !== "active",
       shouldSetBadge: true,
     }),
   });
@@ -82,6 +84,7 @@ export const configureNotificationChannels = async () => {
 };
 
 export const showRideNotification = async (title, body, data = {}) => {
+  if (AppState.currentState !== "active") return null;
   try {
     const module = await getNotifications();
     if (!module?.scheduleNotificationAsync) return null;
@@ -120,75 +123,8 @@ void configureNotificationHandler();
 // PUSH NOTIFICATIONS
 // ======================================================
 
-export const registerForNotifications = async () => {
-  try {
-    // Expo Go on current SDKs cannot provide Android remote push notifications.
-    // Return quietly so notifications never block the rider app startup.
-    const module = await getNotifications();
-    if (!module) return null;
+export const registerForNotifications = () => syncPushDevice();
 
-    await configureNotificationChannels();
-
-    // Push notifications require a physical device.
-    if (!Device.isDevice) {
-      console.log(
-        "⚠️ Push notifications skipped: physical device required."
-      );
-
-      return null;
-    }
-
-    const { status: existingStatus } =
-      await module.getPermissionsAsync();
-
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== "granted") {
-      const { status } =
-        await module.requestPermissionsAsync();
-
-      finalStatus = status;
-    }
-
-    if (finalStatus !== "granted") {
-      console.log(
-        "⚠️ Push notification permission was not granted."
-      );
-
-      return null;
-    }
-
-    const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
-    const tokenResponse =
-      await module.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
-
-    const pushToken = tokenResponse?.data;
-
-    if (!pushToken) {
-      console.log(
-        "⚠️ Expo push token was not generated."
-      );
-
-      return null;
-    }
-
-    // Never log the token. A server registration API is required for remote push delivery.
-    await AsyncStorage.setItem("pushToken", pushToken);
-
-    return pushToken;
-
-  } catch (error) {
-    console.error(
-      "❌ Push notification registration failed:",
-      error?.message || error
-    );
-
-    return null;
-  }
-};
-
-
-// ======================================================
 // CONNECT RIDER WEBSOCKET
 // ======================================================
 
