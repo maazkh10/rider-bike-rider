@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../../services/api";
+import { selectPendingOffer } from "../../services/rideNotificationState";
+import { subscribeRideNotifications } from "../../services/pushClient";
 
 import {
   ActivityIndicator,
@@ -133,6 +135,7 @@ export default function Home() {
   const [statusBusy, setStatusBusy] =
     useState(false);
   const dismissedOffers = useRef(new Set());
+  const { notificationRideId } = useLocalSearchParams();
   useFocusEffect(useCallback(() => {
     let active = true;
     const recover = async () => {
@@ -140,7 +143,7 @@ export default function Home() {
         const [offers, current] = await Promise.all([api.get("/api/notifications/ride-requests"), getActiveRideProfile()]);
         if (!active) return;
         setActiveRide(current?.activeRide || null);
-        const offer = offers.data.find(item => !dismissedOffers.current.has(String(item.rideId)));
+        const offer = selectPendingOffer(offers.data, notificationRideId, dismissedOffers.current);
         if (!current?.activeRide && offer) { setRequest(offer); setRequestVisible(true); }
         else if (!offer || current?.activeRide) setRequestVisible(false);
       } catch { /* Poll again after connectivity returns. */ }
@@ -148,8 +151,9 @@ export default function Home() {
     void recover();
     const timer = setInterval(() => { if (AppState.currentState === "active") void recover(); }, 15000);
     const subscription = AppState.addEventListener("change", state => { if (state === "active") void recover(); });
-    return () => { active = false; clearInterval(timer); subscription.remove(); };
-  }, []));
+    const unsubscribe = subscribeRideNotifications(() => recover());
+    return () => { active = false; clearInterval(timer); subscription.remove(); unsubscribe(); };
+  }, [notificationRideId]));
 
   // ====================================================
   // LOAD PROFILE + RIDES + ACTIVE RIDE
@@ -409,8 +413,7 @@ export default function Home() {
         }
 
         // Request push permissions on supported development/standalone builds.
-        // Current backend has no token registration endpoint, so this only prepares
-        // the device token locally; remote/background delivery requires backend work.
+        // The authenticated registration endpoint links this installation to its owner.
         try {
           await configureNotificationChannels();
           await registerForNotifications();

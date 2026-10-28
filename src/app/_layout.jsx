@@ -19,8 +19,8 @@ export default function RootLayout() {
         const ride = response.data.activeRide;
         if (ride && Number(ride.rideId) === data.rideId)
           router.push({ pathname: ["STARTED", "AWAITING_PAYMENT"].includes(ride.rideStatus) ? "/deliveries/delivery-map" : "/deliveries/pickup-map", params: { id: String(data.rideId) } });
-        else router.push({ pathname: "/(tabs)/home", params: { notification: String(data.eventId || data.rideId) } });
-      } catch { router.push("/(tabs)/home"); }
+        else router.push({ pathname: "/(tabs)/home", params: { notification: String(data.eventId || data.rideId), notificationRideId: String(data.rideId) } });
+      } catch { /* Keep the current screen while the network is unavailable. */ }
     }).then(remove => { if (disposed) remove(); else cleanup = remove; }).catch(() => {});
     return () => { disposed = true; cleanup(); };
   }, []);
