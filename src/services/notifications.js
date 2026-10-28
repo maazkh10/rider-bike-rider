@@ -4,7 +4,7 @@ import * as Device from "expo-device";
 import Constants from "expo-constants";
 import SockJS from "sockjs-client";
 import { getAuthToken } from "../utils/authToken";
-import { syncPushDevice } from "./pushClient";
+import { claimRideNotification, syncPushDevice } from "./pushClient";
 import { AppState } from "react-native";
 
 let stompClient = null;
@@ -55,12 +55,11 @@ const configureNotificationHandler = async () => {
   if (!module?.setNotificationHandler) return;
 
   module.setNotificationHandler({
-    handleNotification: async (notification) => ({
-      shouldShowBanner: !notification.request.content.data?.remote || AppState.currentState !== "active",
-      shouldShowList: !notification.request.content.data?.remote || AppState.currentState !== "active",
-      shouldPlaySound: !notification.request.content.data?.remote || AppState.currentState !== "active",
-      shouldSetBadge: true,
-    }),
+    handleNotification: async (notification) => {
+      const data = notification.request.content.data || {};
+      const show = !data.remote || claimRideNotification(data);
+      return { shouldShowBanner: show, shouldShowList: show, shouldPlaySound: show, shouldSetBadge: false };
+    },
   });
 };
 
@@ -88,6 +87,7 @@ export const showRideNotification = async (title, body, data = {}) => {
   try {
     const module = await getNotifications();
     if (!module?.scheduleNotificationAsync) return null;
+    if (!claimRideNotification(data)) return null;
 
     await module.scheduleNotificationAsync({
       content: { title, body, data },
@@ -430,7 +430,7 @@ export const connectRideSocket = async (
                   await showRideNotification(
                     "New ride request",
                     `Ride #${rideId ?? "—"} is waiting for your response.`,
-                    { type: eventType, rideId }
+                    { type: eventType, rideId, eventId: rideData.eventId }
                   );
                 } else if (
                   eventType === "RIDE_CANCELLED" ||
@@ -439,21 +439,21 @@ export const connectRideSocket = async (
                   await showRideNotification(
                     "Ride request cancelled",
                     `Ride #${rideId ?? "—"} is no longer available.`,
-                    { type: eventType, rideId }
+                    { type: eventType, rideId, eventId: rideData.eventId }
                   );
                   return;
                 } else if (eventType === "RIDE_STARTED") {
                   await showRideNotification(
                     "Ride started",
                     `Ride #${rideId ?? "—"} has started.`,
-                    { type: eventType, rideId }
+                    { type: eventType, rideId, eventId: rideData.eventId }
                   );
                   return;
                 } else if (eventType === "RIDE_COMPLETED") {
                   await showRideNotification(
                     "Ride completed",
                     `Ride #${rideId ?? "—"} has been completed.`,
-                    { type: eventType, rideId }
+                    { type: eventType, rideId, eventId: rideData.eventId }
                   );
                   return;
                 } else {

@@ -2,6 +2,12 @@
   "expo": {
     "name": "Bike Rider",
     "slug": "bike-rider",
+    "owner": "maaz.kh10",
+    "extra": {
+      "eas": {
+        "projectId": "5aecd6b2-417b-4a0e-907e-845cbe92174a"
+      }
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
