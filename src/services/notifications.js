@@ -159,9 +159,21 @@ export const registerForNotifications = async () => {
       return null;
     }
 
-    const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+    // Resolve the project ID from the build environment first, then from
+    // the checked-in Expo app config. The same ID must own the EAS FCM V1 key.
+    const projectId =
+      process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
+      Constants.easConfig?.projectId ||
+      Constants.expoConfig?.extra?.eas?.projectId;
+
+    if (!projectId) {
+      throw new Error(
+        "Expo project ID is missing. Configure extra.eas.projectId in app.json."
+      );
+    }
+
     const tokenResponse =
-      await module.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
+      await module.getExpoPushTokenAsync({ projectId });
 
     const pushToken = tokenResponse?.data;
 
