@@ -15,6 +15,7 @@ import {
 } from "react-native";
 
 import { getMyProfile, loginWithCurrentBackend } from "../../services/auth.service";
+import { registerForNotifications } from "../../services/notifications";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -63,6 +64,14 @@ export default function LoginScreen() {
         const AsyncStorage =
           require("@react-native-async-storage/async-storage").default;
         await AsyncStorage.setItem("riderId", String(riderId));
+      }
+
+      // Registration needs the newly authenticated Rider JWT. A registration
+      // failure must not block an otherwise successful login.
+      try {
+        await registerForNotifications();
+      } catch (pushError) {
+        if (__DEV__) console.log("Push registration after login:", pushError?.message);
       }
 
       router.replace("/(tabs)/home");
