@@ -3,10 +3,10 @@ name: Rider app validation
 on:
   push:
     branches:
-      - repair/ride-lifecycle-notifications-payments
+      - maaz/push-notification-integration
   pull_request:
     branches:
-      - repair/ride-lifecycle-notifications-payments
+      - maaz/push-notification-integration
   workflow_dispatch:
 
 jobs:
