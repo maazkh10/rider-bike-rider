@@ -4,6 +4,7 @@ import * as Device from "expo-device";
 import Constants from "expo-constants";
 import SockJS from "sockjs-client";
 import { getAuthToken } from "../utils/authToken";
+import { registerPushDevice } from "./pushRegistration";
 
 let stompClient = null;
 let currentRideCallback = null;
@@ -173,7 +174,9 @@ export const registerForNotifications = async () => {
     }
 
     // Never log the token. A server registration API is required for remote push delivery.
-    await AsyncStorage.setItem("pushToken", pushToken);
+    // Register with the authenticated backend. A generated token alone cannot
+    // receive remote pushes until the server associates it with this Rider.
+    await registerPushDevice(pushToken);
 
     return pushToken;
 
