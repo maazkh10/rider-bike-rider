@@ -59,13 +59,19 @@
       [
         "expo-notifications",
         {
-          "color": "#6FAF00"
+          "color": "#6FAF00",
+          "defaultChannel": "ride-requests"
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5aecd6b2-417b-4a0e-907e-845cbe92174a"
+      }
     }
   }
 }

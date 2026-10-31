@@ -4,6 +4,7 @@ import { getAuthToken, setAuthToken, clearAuthToken } from "../utils/authToken";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { stopLiveLocationTracking, clearActiveRideState } from "./liveLocation.service";
 import { disconnectRideSocket } from "./notifications";
+import { unregisterPushDevice } from "./pushRegistration";
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ||
@@ -143,6 +144,11 @@ export default api;
 
 
 export const logout = async () => {
+  // Best-effort server-side device deactivation before clearing the JWT.
+  // The backend scopes this operation to the currently authenticated user.
+  await unregisterPushDevice().catch((error) => {
+    if (__DEV__) console.log("Push device logout cleanup:", error?.message);
+  });
   await disconnectRideSocket().catch(() => {});
   await stopLiveLocationTracking().catch(() => {});
   await clearActiveRideState().catch(() => {});

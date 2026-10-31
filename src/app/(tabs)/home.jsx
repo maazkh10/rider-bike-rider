@@ -388,9 +388,8 @@ export default function Home() {
           );
         }
 
-        // Request push permissions on supported development/standalone builds.
-        // Current backend has no token registration endpoint, so this only prepares
-        // the device token locally; remote/background delivery requires backend work.
+        // The authenticated registration also runs immediately after login.
+        // Retry on home focus so a temporary network failure can recover later.
         try {
           await configureNotificationChannels();
           await registerForNotifications();

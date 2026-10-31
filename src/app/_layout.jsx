@@ -1,42 +1,68 @@
 import { useEffect } from "react";
 import { Stack, router } from "expo-router";
-import { registerForNotifications, addNotificationListeners } from "../services/notifications";
+import {
+  addNotificationListeners,
+  configureNotificationChannels,
+  registerForNotifications,
+} from "../services/notifications";
 
-// IMPORTANT:
-// Import this module at startup so expo-task-manager registers the
-// background location task before Location.startLocationUpdatesAsync()
-// is called.
+// Register the background location task before it is started elsewhere.
 import "../services/liveLocation.service";
+
+const routeFromNotification = (response) => {
+  const data = response?.notification?.request?.content?.data || {};
+  const type = String(data.type || "").toUpperCase();
+  const rideId = data.rideId ?? data.deliveryId;
+
+  if (!rideId || type !== "RIDE_REQUEST") return;
+
+  // Open the app's pending-offer list. Do not jump to an active-ride-only
+  // screen: a newly offered ride has not necessarily been accepted yet.
+  router.push({
+    pathname: "/deliveries",
+    params: { notificationRideId: String(rideId) },
+  });
+};
 
 export default function RootLayout() {
   useEffect(() => {
-    registerForNotifications();
+    let active = true;
+    let removeListeners = () => {};
 
-    let removeNotificationListeners = () => {};
-
-    addNotificationListeners(
-      (notification) => {
-        if (__DEV__) {
-          console.log("Foreground Notification Received:", notification);
-        }
-      },
-      (response) => {
-        const data = response?.notification?.request?.content?.data || {};
-        const deliveryId = data?.deliveryId || data?.rideId;
-
-        if (deliveryId) {
-          router.push({
-            pathname: "/deliveries/pickup-map",
-            params: { id: String(deliveryId) },
-          });
-        }
+    (async () => {
+      try {
+        await configureNotificationChannels();
+        // Device registration occurs after Rider login, when the JWT exists.
+      } catch (error) {
+        if (__DEV__) console.log("Notification channel setup:", error?.message);
       }
-    ).then((cleanup) => {
-      removeNotificationListeners = cleanup;
-    });
+
+      const cleanup = await addNotificationListeners(
+        (notification) => {
+          if (__DEV__) {
+            console.log("Foreground push received", {
+              identifier: notification?.request?.identifier,
+            });
+          }
+        },
+        routeFromNotification
+      );
+
+      if (active) removeListeners = cleanup;
+      else cleanup();
+
+      try {
+        const initial = await (await import("expo-notifications"))
+          .getLastNotificationResponseAsync();
+        if (active && initial) routeFromNotification(initial);
+      } catch (error) {
+        if (__DEV__) console.log("Initial notification response:", error?.message);
+      }
+    })();
 
     return () => {
-      removeNotificationListeners();
+      active = false;
+      removeListeners();
     };
   }, []);
 
