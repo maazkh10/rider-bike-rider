@@ -3,7 +3,7 @@ import api from "./api";
 import { getAuthToken, setAuthToken, clearAuthToken } from "../utils/authToken";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { stopLiveLocationTracking, clearActiveRideState } from "./liveLocation.service";
-import { disconnectRideSocket } from "./notifications";
+import { disconnectRideSocket, unregisterPushDevice } from "./notifications";
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ||
@@ -146,6 +146,7 @@ export const logout = async () => {
   await disconnectRideSocket().catch(() => {});
   await stopLiveLocationTracking().catch(() => {});
   await clearActiveRideState().catch(() => {});
+  await unregisterPushDevice().catch(() => {});
 
   // Clear local session/cache only. There is no logout endpoint in the
   // provided backend reference, so no fake API request is made.
