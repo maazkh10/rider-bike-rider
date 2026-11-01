@@ -1,8 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Client } from "@stomp/stompjs";
 import * as Device from "expo-device";
+import { Platform } from "react-native";
 import Constants from "expo-constants";
 import SockJS from "sockjs-client";
+import api from "./api";
 import { getAuthToken } from "../utils/authToken";
 
 let stompClient = null;
@@ -120,73 +122,75 @@ void configureNotificationHandler();
 // PUSH NOTIFICATIONS
 // ======================================================
 
+const getInstallationId = async () => {
+  let installationId = await AsyncStorage.getItem("pushInstallationId");
+  if (!installationId) {
+    installationId = `rider-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
+    await AsyncStorage.setItem("pushInstallationId", installationId);
+  }
+  return installationId;
+};
+
+const registerPushTokenWithBackend = async (pushToken) => {
+  const installationId = await getInstallationId();
+  await api.put("/api/notifications/devices", {
+    app: "rider",
+    installationId,
+    token: pushToken,
+    platform: Platform.OS,
+  });
+  await AsyncStorage.setItem("pushToken", pushToken);
+  return pushToken;
+};
+
 export const registerForNotifications = async () => {
   try {
-    // Expo Go on current SDKs cannot provide Android remote push notifications.
-    // Return quietly so notifications never block the rider app startup.
     const module = await getNotifications();
-    if (!module) return null;
+    if (!module || !Device.isDevice) return null;
 
     await configureNotificationChannels();
 
-    // Push notifications require a physical device.
-    if (!Device.isDevice) {
-      console.log(
-        "⚠️ Push notifications skipped: physical device required."
-      );
-
-      return null;
-    }
-
-    const { status: existingStatus } =
-      await module.getPermissionsAsync();
-
+    const { status: existingStatus } = await module.getPermissionsAsync();
     let finalStatus = existingStatus;
-
     if (existingStatus !== "granted") {
-      const { status } =
-        await module.requestPermissionsAsync();
+      finalStatus = (await module.requestPermissionsAsync()).status;
+    }
+    if (finalStatus !== "granted") return null;
 
-      finalStatus = status;
+    const projectId =
+      Constants.easConfig?.projectId ||
+      Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) {
+      throw new Error("EAS project ID is missing from Expo configuration.");
     }
 
-    if (finalStatus !== "granted") {
-      console.log(
-        "⚠️ Push notification permission was not granted."
-      );
-
-      return null;
-    }
-
-    const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
-    const tokenResponse =
-      await module.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
-
+    const tokenResponse = await module.getExpoPushTokenAsync({ projectId });
     const pushToken = tokenResponse?.data;
+    if (!pushToken) throw new Error("Expo did not return a push token.");
 
-    if (!pushToken) {
-      console.log(
-        "⚠️ Expo push token was not generated."
-      );
-
-      return null;
-    }
-
-    // Never log the token. A server registration API is required for remote push delivery.
-    await AsyncStorage.setItem("pushToken", pushToken);
-
+    // The API client attaches the logged-in rider's JWT automatically.
+    await registerPushTokenWithBackend(pushToken);
     return pushToken;
-
   } catch (error) {
-    console.error(
-      "❌ Push notification registration failed:",
-      error?.message || error
-    );
-
+    if (__DEV__) {
+      console.log("Rider push registration failed:", error?.response?.data || error?.message);
+    }
     return null;
   }
 };
 
+export const unregisterPushDevice = async () => {
+  try {
+    const installationId = await AsyncStorage.getItem("pushInstallationId");
+    if (installationId) {
+      await api.delete(`/api/notifications/devices/rider/${encodeURIComponent(installationId)}`);
+    }
+  } catch (error) {
+    if (__DEV__) console.log("Push device unregister failed:", error?.response?.data || error?.message);
+  } finally {
+    await AsyncStorage.removeItem("pushToken");
+  }
+};
 
 // ======================================================
 // CONNECT RIDER WEBSOCKET

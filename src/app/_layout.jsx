@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Stack, router } from "expo-router";
-import { registerForNotifications, addNotificationListeners } from "../services/notifications";
+import { addNotificationListeners } from "../services/notifications";
 
 // IMPORTANT:
 // Import this module at startup so expo-task-manager registers the
@@ -10,8 +10,6 @@ import "../services/liveLocation.service";
 
 export default function RootLayout() {
   useEffect(() => {
-    registerForNotifications();
-
     let removeNotificationListeners = () => {};
 
     addNotificationListeners(
